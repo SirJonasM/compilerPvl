@@ -42,14 +42,14 @@ fsm nondet # ein nicht-deterministischer Automat
  
 	a 	b 		\e 			# kann einen Epsilon-�bergang haben
 0s	1	1|2		1|2|3 		# kann mehrere m�gliche Folgezust�nde haben 
-1	1 	1 		1
+1	1 	2 		1
 2	1 	2 		3
 3e	- 	- 		-
 
 fsm nondett
 
     a       b       \e
-0s  0|1    2       -
+0s  0|1     2       -
 1   3       3       -
 2   3       2|3     -
 3e  -       3      -

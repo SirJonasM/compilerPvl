@@ -7,6 +7,7 @@ import java.util.Set;
 public class SingleState implements State {
 	private final int id;
 	boolean isStart;
+	String label;
 	boolean isEnd;
 	public SingleState(String image) {
 		this.id = Integer.parseInt(image);
@@ -57,5 +58,14 @@ public class SingleState implements State {
 	}
 	public void setEndState(boolean isEnd){
 		this.isEnd = isEnd;
+	}
+
+	@Override
+	public void setLabel(String label) {
+		this.label = label;
+	}
+	@Override
+	public String getLabel() {
+		return label;
 	}
 }

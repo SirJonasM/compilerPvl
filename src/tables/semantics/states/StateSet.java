@@ -11,6 +11,7 @@ public class StateSet implements State {
     private final Set<Integer> ids;
     private boolean isEnd;
     private boolean isStart;
+    private String label;
 
     public StateSet(String image) {
         List<Integer> ids = Arrays.stream(image.split("\\|")).map(Integer::valueOf).toList();
@@ -52,6 +53,15 @@ public class StateSet implements State {
     @Override
     public void setStartState(boolean startState) {
         this.isStart = startState;
+    }
+
+    @Override
+    public void setLabel(String label) {
+        this.label = label;
+    }
+    @Override
+    public String getLabel() {
+        return label;
     }
 
     @Override

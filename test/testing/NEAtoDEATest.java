@@ -8,21 +8,20 @@ import tables.semantics.symbols.SemanticException;
 import tables.semantics.symbols.Symbols;
 import tables.semantics.table.Table;
 import tables.semantics.table.Tables;
+import tables.semantics.table.Transition;
 
 public class NEAtoDEATest {
     @Test
-    void test() throws SemanticException {
-        int i = 0;
-        System.out.println(i++);
-        System.out.println(i);
-        StateSet stateSet = new StateSet("1|2|3");
-        System.out.println(stateSet);
+    void testToDea() throws SemanticException {
         Parser p = Parser.fromFile("samples/sample2.txt");
         p.entries();
         Symbols s = p.getSymbols();
-        Table t = s.getTable("nondett");
-        Table dea = Tables.toDea(t);
-        System.out.println(dea);
+        Table nea = s.getTable("nondett");
+        for(Transition t : nea.getTransitions()){
+            t.from().setLabel(String.valueOf(t.from().getId()));
+        }
+        Table dea = Tables.toDea2(nea);
         PrettyPrinter.writeDotFile(dea);
+        PrettyPrinter.writeDotFile(nea);
     }
 }

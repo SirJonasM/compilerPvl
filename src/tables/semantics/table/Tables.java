@@ -7,6 +7,8 @@ import tables.semantics.states.State;
 import tables.semantics.symbols.SemanticException;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.zip.InflaterInputStream;
 
 
 public class Tables {
@@ -17,10 +19,10 @@ public class Tables {
         List<Transition> transitions = nonDeterministic.getTransitions();
         List<Set<Integer>> newStates = subsets(transitions.stream().map(s -> s.from().getId()).toList());
         List<State> STATES = new ArrayList<>();
-        for (int i = 0; i< newStates.size(); i++) {
+        for (int i = 0; i < newStates.size(); i++) {
             STATES.add(new SingleState(String.valueOf(i)));
         }
-        int startId = findStateId(newStates,Set.of(nonDeterministic.getStart()));
+        int startId = findStateId(newStates, Set.of(nonDeterministic.getStart()));
         STATES.get(startId).setStartState(true);
 
         int endId = findStateId(newStates, nonDeterministic.getEnds());
@@ -32,7 +34,7 @@ public class Tables {
             Transition transition = new Transition(STATES.get(id));
             List<State> newTo = new ArrayList<>();
             Set<Integer> singleStateSet = newStates.get(id);
-            for(int exprId = 0; exprId < header.size(); exprId++) {
+            for (int exprId = 0; exprId < header.size(); exprId++) {
                 Set<Integer> ids = new HashSet<>();
                 for (Integer singleState : singleStateSet) {
                     Transition currentTransition = transitions.get(singleState);
@@ -49,15 +51,92 @@ public class Tables {
         return new Table("nonDeterministic" + nonDeterministic.getId(), header, simplify(newTransitions));
     }
 
+    static HashMap<HashSet<Integer>, State> STATES;
+    static LinkedList<HashSet<Integer>> statesToDo;
+    public static Table toDea2(Table nonDeterministic) throws SemanticException {
+        STATES = new HashMap<>();
+        statesToDo = new LinkedList<>();
+        HashSet<Integer> start = getState(nonDeterministic, nonDeterministic.getStart());
+        statesToDo.add(start);
+        SingleState startState = new SingleState(String.valueOf(STATES.size()));
+        startState.setStartState(true);
+        startState.setLabel(start.toString());
+        STATES.put(start,startState);
+        List<Transition> transitions = new ArrayList<>();
+        while (!statesToDo.isEmpty()){
+            HashSet<Integer> newState = statesToDo.poll();
+            Transition transition = getTransition(nonDeterministic, newState);
+            transitions.add(transition);
+        }
+        for(Transition transition : transitions){
+            System.out.println(transition.from + " | " + transition.to);
+        }
+        for(int i : nonDeterministic.getEnds()) {
+            for (HashSet<Integer> set : STATES.keySet()){
+                if(set.contains(i)){
+                    STATES.get(set).setEndState(true);
+                }
+            }
+        }
+        System.out.println(STATES);
+        List<Expr> header = new ArrayList<>(List.copyOf(nonDeterministic.getHeader()));
+        header.removeLast();
+
+        return new Table(nonDeterministic.getId() + "non",header ,transitions);
+    }
+
+    private static Transition getTransition(Table nonDeterministic, HashSet<Integer> newState) {
+        State from = STATES.get(newState);
+        List<State> to = new ArrayList<>();
+        List<Expr> header = nonDeterministic.getHeader();
+        for (int i = 0; i < header.size(); i++) {
+            if (header.get(i).isEpsilon()) continue;
+            HashSet<Integer> toSingleState = new HashSet<>();
+            for (int state : newState) {
+                nonDeterministic.getTransitions().get(state).to.get(i).getIds().forEach(a -> toSingleState.addAll(getState(nonDeterministic, a)));
+            }
+            State state;
+            if(toSingleState.isEmpty()){
+                state = NoState.getNoState();
+            }else {
+                state = new SingleState(String.valueOf(STATES.size()));
+            }
+            state.setLabel(toSingleState.toString());
+            State newAddedState = STATES.putIfAbsent(toSingleState, state);
+            if(newAddedState == null){
+                statesToDo.add(toSingleState);
+            }
+            to.add(STATES.get(toSingleState));
+        }
+        return new Transition(from, to);
+    }
+
+    private static HashSet<Integer> getState(Table nonDeterministic, int stateId) {
+        List<Expr> header = nonDeterministic.getHeader();
+        HashSet<Integer> s = new HashSet<>();
+        s.add(stateId);
+        for (int i = 0; i < header.size(); i++) {
+            if (!header.get(i).isEpsilon()) continue;
+            State state = nonDeterministic.getTransitions().get(stateId).from;
+            nonDeterministic.getTransitions().get(state.getId()).to.get(i).getIds().stream()
+                    .filter(a -> !s.contains(a))
+                    .forEach(v -> {
+                        System.out.println("Adding: " + v + " to " + s);
+                        s.addAll(getState(nonDeterministic, v));
+                    });
+        }
+        return s;
+    }
+
     private static List<Transition> simplify(List<Transition> transitions) {
         List<Transition> newTransitions = new ArrayList<>();
         Set<Integer> tos = new HashSet<>();
         for (Transition transition : transitions) {
             tos.addAll(transition.to().stream().map(State::getId).toList());
         }
-        for(Transition transition : transitions) {
+        for (Transition transition : transitions) {
             State fromId = transition.from();
-            if(tos.contains(fromId.getId()) || fromId.isStart()){
+            if (tos.contains(fromId.getId()) || fromId.isStart()) {
                 newTransitions.add(transition);
             }
         }

@@ -11,4 +11,7 @@ public interface State  {
     boolean isNoState();
     void setEndState(boolean endState);
     void setStartState(boolean startState);
+
+    void setLabel(String label);
+    String getLabel();
 }

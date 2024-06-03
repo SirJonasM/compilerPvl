@@ -55,4 +55,13 @@ public class NoState implements State {
 	public void setStartState(boolean startState) {
 
 	}
+
+	@Override
+	public void setLabel(String label) {
+
+	}
+	@Override
+	public String getLabel() {
+		return null;
+	}
 }
